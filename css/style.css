@@ -81,23 +81,25 @@ body {
 /* =========================
    CHART CONTAINER
 ========================= */
+/* =========================
+   CHART CONTAINER (FIXED)
+========================= */
 .chart-container {
-    max-width: 600px; /* max size */
-    width: 100%;      /* scale to container */
-    margin: 0 auto 20px auto;
+    width: 100%;
+    max-width: 600px;
+    height: 320px; /* IMPORTANT: gives chart space */
+    margin: 20px auto;
     padding: 20px;
     border-radius: 10px;
-    background: #e8caca;
-    box-shadow: 0 4px 12px rgba(188, 40, 40, 0.1);
+    background: #fff; /* cleaner professional look */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* Canvas full width inside container */
+/* Let Chart.js control canvas properly */
 .chart-container canvas {
     width: 100% !important;
-    
-    height: 350px !important;
+    height: 100% !important;
 }
-
 
 /* =========================
    TABLES
@@ -247,4 +249,63 @@ input, select {
 .book-card p {
     font-size: 14px;
     color: #555;
+}
+/* Section Titles */
+.section-title {
+    margin-top: 30px;
+    margin-bottom: 10px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* Navbar improvements */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+}
+
+.nav-links a {
+    margin-left: 15px;
+}
+
+.logout {
+    color: red;
+}
+
+/* Cards */
+.card p {
+    font-size: 14px;
+    color: #777;
+}
+
+/* Buttons */
+.btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.return-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+.issue-btn {
+    background: #2196F3;
+    color: white;
+}
+
+/* Overdue row highlight */
+.row-overdue {
+    background-color: #ffe6e6;
+}
+
+/* Table spacing */
+table {
+    width: 100%;
+    margin-bottom: 25px;
+    border-collapse: collapse;
 }

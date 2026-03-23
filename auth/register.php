@@ -4,27 +4,44 @@ include "../config/database.php";
 
 $message = "";
 
+// Handle registration
 if(isset($_POST['register'])){
 
-    $name = $conn->real_escape_string($_POST['name']);
-    $email = $conn->real_escape_string($_POST['email']);
-    $phone = $conn->real_escape_string($_POST['phone']);
-    $student_id = $conn->real_escape_string($_POST['student_id']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // secure hashing
+    // Sanitize input
+    $name = $conn->real_escape_string(trim($_POST['name']));
+    $email = $conn->real_escape_string(trim($_POST['email']));
+    $phone = $conn->real_escape_string(trim($_POST['phone']));
+    $student_id = $conn->real_escape_string(trim($_POST['student_id']));
+    $password_raw = $_POST['password'];
 
-    // Check if email already exists
-    $check = $conn->query("SELECT * FROM users WHERE email='$email'");
-    if($check->num_rows > 0){
-        $message = "Email already exists. Please use another email.";
+    // Basic validation
+    if(strlen($password_raw) < 8){
+        $message = "Password must be at least 8 characters long.";
     } else {
-        $conn->query("
-            INSERT INTO users (name,email,password,phone,student_id,role)
-            VALUES ('$name','$email','$password','$phone','$student_id','student')
-        ");
-        $message = "Registration successful! You can now login.";
+
+        // Hash password securely
+        $password = password_hash($password_raw, PASSWORD_BCRYPT);
+
+        // Check if email already exists
+        $check = $conn->query("SELECT id FROM users WHERE email='$email'");
+        if($check->num_rows > 0){
+            $message = "Email already exists. Please use another email.";
+        } else {
+            // Insert new user
+            $stmt = $conn->prepare("INSERT INTO users (name,email,password,phone,student_id,role) VALUES (?,?,?,?,?,?)");
+            $role = 'student';
+            $stmt->bind_param("ssssss", $name, $email, $password, $phone, $student_id, $role);
+            if($stmt->execute()){
+                $message = "Registration successful! You can now <a href='login.php'>login</a>.";
+            } else {
+                $message = "Error registering user. Please try again.";
+            }
+            $stmt->close();
+        }
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -78,7 +95,7 @@ if(isset($_POST['register'])){
     <h2>Create Account</h2>
 
     <?php if($message != ""): ?>
-    <p class="message"><?php echo $message; ?></p>
+        <p class="message"><?php echo $message; ?></p>
     <?php endif; ?>
 
     <form method="POST" action="">
@@ -95,7 +112,7 @@ if(isset($_POST['register'])){
         <input type="text" name="student_id" required>
 
         <label>Password</label>
-        <input type="password" name="password" required>
+        <input type="password" name="password" required minlength="8">
 
         <button type="submit" name="register">Register</button>
     </form>

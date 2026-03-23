@@ -9,6 +9,14 @@ if(!isset($_SESSION['user_id'])){
 
 $user_id = $_SESSION['user_id'];
 
+function calculateFine($days) {
+    if ($days <= 0) return 0;
+
+    if ($days <= 3) return $days * 10;
+    if ($days <= 7) return (3 * 10) + (($days - 3) * 20);
+    return (3 * 10) + (4 * 20) + (($days - 7) * 50);
+}
+
 /* Messages */
 $message = $_SESSION['message'] ?? "";
 unset($_SESSION['message']);
@@ -18,9 +26,14 @@ $totalBorrowed = $conn->query("SELECT COUNT(*) AS total FROM loans WHERE user_id
 $overdue = $conn->query("SELECT COUNT(*) AS total FROM loans WHERE user_id='$user_id' AND return_date IS NULL AND due_date < CURDATE()")->fetch_assoc()['total'];
 $returned = $conn->query("SELECT COUNT(*) AS total FROM loans WHERE user_id='$user_id' AND return_date IS NOT NULL")->fetch_assoc()['total'];
 
+
+/* ---------- TOTAL UNPAID FINES ---------- */ $res = $conn->query(" SELECT SUM(fine_amount) AS total FROM loans WHERE user_id=$user_id AND fine_paid=0 "); $totalFine = $res->fetch_assoc()['total'] ?? 0;
 /* Search */
 $searchTerm = $_GET['search_books'] ?? "";
 $searchTerm = $conn->real_escape_string($searchTerm);
+
+
+
 ?>
 
 <!DOCTYPE html>
@@ -49,6 +62,8 @@ $searchTerm = $conn->real_escape_string($searchTerm);
 <?php if($message != ""): ?>
 <div class="alert-success"><?php echo $message; ?></div>
 <?php endif; ?>
+
+<!-- TOTAL FINE --> <div class="alert-danger"> Total Outstanding Fines: <strong><?= $totalFine ?> KES</strong> </div>
 
 <!-- Statistics Cards -->
 <div class="card-grid">
@@ -97,11 +112,13 @@ new Chart(ctx, {
 <th>Loan Date</th>
 <th>Due Date</th>
 <th>Status</th>
+<th>Fine (KES)</th>
 <th>Action</th>
 </tr>
 <?php
 $sql = "
-SELECT loans.id, books.title, loans.loan_date, loans.due_date, loans.return_date
+SELECT loans.*, books.title,
+GREATEST(DATEDIFF(CURDATE(), loans.due_date),0) AS days_overdue
 FROM loans
 JOIN book_copies ON loans.copy_id = book_copies.id
 JOIN books ON book_copies.book_id = books.id
@@ -111,16 +128,31 @@ $result = $conn->query($sql);
 
 while($row = $result->fetch_assoc()){
     $status='Borrowed'; $class='borrowed';
-    if($row['return_date']){ $status='Returned'; $class='returned'; }
-    if(!$row['return_date'] && strtotime($row['due_date'])<time()){ $status='Overdue'; $class='overdue'; }
+    $days = $row['days_overdue'];
+    if($row['return_date']){
+    $status = "Returned";
+    $class = "returned";
+    $fine = $row['fine_amount']; // STORED fine
+} else {
+    if($days > 0){
+        $status = "Overdue";
+        $class = "overdue";
+    } else {
+        $status = "Borrowed";
+        $class = "borrowed";
+    }
 
-    echo "<tr>
-    <td>{$row['title']}</td>
-    <td>{$row['loan_date']}</td>
-    <td>{$row['due_date']}</td>
-    <td><span class='badge {$class}'>{$status}</span></td>
-    <td>".(!$row['return_date'] ? "<a class='btn' href='return_book.php?loan_id={$row['id']}'>Return</a>" : "-")."</td>
-    </tr>";
+    $fine = calculateFine($days); // LIVE fine
+}
+
+  echo "<tr>
+<td>{$row['title']}</td>
+<td>{$row['loan_date']}</td>
+<td>{$row['due_date']}</td>
+<td><span class='badge {$class}'>{$status}</span></td>
+<td>{$fine}</td>
+<td>".(!$row['return_date'] ? "<a class='btn' href='return_book.php?loan_id={$row['id']}'>Return</a>" : "-")."</td>
+</tr>";
 }
 ?>
 </table>

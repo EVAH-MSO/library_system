@@ -2,18 +2,62 @@
 session_start();
 include "../config/database.php";
 
-/* check librarian access */
+/* ---------- ACCESS CONTROL ---------- */
 if(!isset($_SESSION['role']) || $_SESSION['role'] != "librarian"){
     die("Access denied");
 }
 
-/* --------- STATISTICS --------- */
+/* ---------- FINE CALCULATION (TIERED) ---------- */
+function calculateFine($days) {
+    if ($days <= 0) return 0;
+
+    if ($days <= 3) {
+        return $days * 10;
+    } elseif ($days <= 7) {
+        return (3 * 10) + (($days - 3) * 20);
+    } else {
+        return (3 * 10) + (4 * 20) + (($days - 7) * 50);
+    }
+}
+
+/* ---------- STATISTICS ---------- */
 $total_books = $conn->query("SELECT COUNT(*) as total FROM books")->fetch_assoc()['total'];
 $total_users = $conn->query("SELECT COUNT(*) as total FROM users")->fetch_assoc()['total'];
 $borrowed = $conn->query("SELECT COUNT(*) as total FROM book_copies WHERE status='borrowed'")->fetch_assoc()['total'];
 $available = $conn->query("SELECT COUNT(*) as total FROM book_copies WHERE status='available'")->fetch_assoc()['total'];
 
-/* --------- BORROWED BOOKS --------- */
+/* ---------- CALCULATE BORROWED / RETURNED / OVERDUE FOR CHART ---------- */
+$totalBorrowed = $borrowed;
+
+$returned = $conn->query("
+    SELECT COUNT(*) as total 
+    FROM loans 
+    WHERE return_date IS NOT NULL
+")->fetch_assoc()['total'];
+
+$overdue = $conn->query("
+    SELECT COUNT(*) as total 
+    FROM loans 
+    WHERE return_date IS NULL 
+    AND due_date < CURDATE()
+")->fetch_assoc()['total'];
+
+/* ---------- USER SEARCH (SECURE) ---------- */
+$search_results = null;
+if(isset($_GET['search_user']) && !empty($_GET['search_user'])){
+    $search = "%" . trim($_GET['search_user']) . "%";
+
+    $stmt = $conn->prepare("
+        SELECT id, name, email, phone, student_id 
+        FROM users 
+        WHERE name LIKE ? OR email LIKE ?
+    ");
+    $stmt->bind_param("ss", $search, $search);
+    $stmt->execute();
+    $search_results = $stmt->get_result();
+}
+
+/* ---------- ACTIVE LOANS (WITH FINES) ---------- */
 $active_loans = $conn->query("
 SELECT 
     loans.id AS loan_id,
@@ -25,7 +69,8 @@ SELECT
     books.title,
     book_copies.copy_number,
     loans.loan_date,
-    loans.due_date
+    loans.due_date,
+    GREATEST(DATEDIFF(CURDATE(), loans.due_date), 0) AS days_overdue
 FROM loans
 JOIN users ON loans.user_id = users.id
 JOIN book_copies ON loans.copy_id = book_copies.id
@@ -34,13 +79,14 @@ WHERE loans.return_date IS NULL
 ORDER BY loans.due_date ASC
 ");
 
-/* --------- OVERDUE BOOKS --------- */
+/* ---------- OVERDUE BOOKS ---------- */
 $overdue_books = $conn->query("
 SELECT 
     users.name,
     books.title,
     book_copies.copy_number,
-    loans.due_date
+    loans.due_date,
+    DATEDIFF(CURDATE(), loans.due_date) AS days_overdue
 FROM loans
 JOIN users ON loans.user_id = users.id
 JOIN book_copies ON loans.copy_id = book_copies.id
@@ -49,12 +95,14 @@ WHERE loans.return_date IS NULL
 AND loans.due_date < CURDATE()
 ");
 
-/* --------- ACTIVE HOLDS --------- */
+/* ---------- ACTIVE HOLDS ---------- */
 $holds = $conn->query("
 SELECT 
+    holds.id,
     users.id AS user_id,
     users.name,
     IFNULL(users.email,'N/A') AS email,
+    books.id AS book_id,
     books.title,
     holds.hold_date
 FROM holds
@@ -69,154 +117,165 @@ ORDER BY holds.hold_date DESC
 <head>
 <title>Librarian Dashboard</title>
 <link rel="stylesheet" href="../css/style.css">
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <!-- NAVBAR -->
 <div class="navbar">
-<h1>Librarian Panel</h1>
-<div>
-<a href="add_book.php">Add Book</a>
-<a href="manage_books.php">Manage Books</a>
-<a href="../auth/logout.php">Logout</a>
-</div>
+    <h1>📚 Librarian Panel</h1>
+    <div class="nav-links">
+        <a href="add_book.php">Add Book</a>
+        <a href="manage_books.php">Manage Books</a>
+        <a href="../auth/logout.php" class="logout">Logout</a>
+    </div>
 </div>
 
 <div class="container">
 
-<!-- STATISTICS CARDS -->
+<!-- DASHBOARD TITLE -->
+<h2 class="section-title">Dashboard Overview</h2>
+
+<!-- STAT CARDS -->
 <div class="card-grid">
     <div class="card">
-        <h3>Total Books</h3>
-        <h2><?php echo $total_books; ?></h2>
+        <p>Total Books</p>
+        <h2><?= $total_books ?></h2>
     </div>
     <div class="card">
-        <h3>Total Users</h3>
-        <h2><?php echo $total_users; ?></h2>
+        <p>Total Users</p>
+        <h2><?= $total_users ?></h2>
     </div>
     <div class="card">
-        <h3>Borrowed Copies</h3>
-        <h2><?php echo $borrowed; ?></h2>
+        <p>Borrowed Copies</p>
+        <h2><?= $borrowed ?></h2>
     </div>
     <div class="card">
-        <h3>Available Copies</h3>
-        <h2><?php echo $available; ?></h2>
+        <p>Available Copies</p>
+        <h2><?= $available ?></h2>
     </div>
 </div>
 
-<!-- DOUGHNUT CHART -->
+<!-- CHART -->
 <div class="chart-container">
-<canvas id="libraryChart"></canvas>
+    <canvas id="dashboardChart"></canvas>
 </div>
 <script>
-const ctx = document.getElementById('libraryChart').getContext('2d');
-const borrowedCount = <?php echo $borrowed; ?>;
-const availableCount = <?php echo $available; ?>;
-const myChart = new Chart(ctx, {
-
+const ctx = document.getElementById('dashboardChart').getContext('2d');
+new Chart(ctx, {
     type: 'doughnut',
     data: {
-        labels: ['Borrowed', 'Available'],
+        labels: ['Borrowed', 'Returned', 'Overdue'],
         datasets: [{
-            label: 'Books',
-            data: [borrowedCount, availableCount],
-            backgroundColor: ['#ee90d2', '#a469f3'],
-            borderWidth: 2
+            data: [<?= $totalBorrowed ?>, <?= $returned ?>, <?= $overdue ?>],
+            backgroundColor: ['#6da8d0','#4CAF50','#f44336']
         }]
     },
     options: {
-        responsive: true,   // scales with container
-        maintainAspectRatio: false,  // preserves ratio
-        plugins: {
-            legend: {
-                position: 'bottom'
-            }
-        }
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{ legend:{ position:'bottom' } }
     }
 });
 </script>
 
-<!-- QUICK SEARCH -->
+<!-- SEARCH -->
 <div class="quick-search">
-<form method="GET" action="">
-<input type="text" name="search_user" placeholder="Search user by name or email">
-<button type="submit">Search</button>
-</form>
+    <form method="GET">
+        <input type="text" name="search_user" placeholder="🔍 Search user by name or email">
+        <button type="submit">Search</button>
+    </form>
 </div>
 
-<!-- BORROWED BOOKS -->
-<h2>Borrowed Books</h2>
+<?php if($search_results): ?>
+<h2 class="section-title">Search Results</h2>
+<table class="table-hover">
+<tr>
+<th>Name</th><th>Email</th><th>Phone</th><th>Student ID</th>
+</tr>
+<?php while($u = $search_results->fetch_assoc()): ?>
+<tr>
+<td><?= $u['name'] ?></td>
+<td><?= $u['email'] ?></td>
+<td><?= $u['phone'] ?></td>
+<td><?= $u['student_id'] ?></td>
+</tr>
+<?php endwhile; ?>
+</table>
+<?php endif; ?>
+
+<!-- ACTIVE LOANS -->
+<h2 class="section-title">Borrowed Books</h2>
 <table class="table-hover">
 <tr>
 <th>User</th>
 <th>Email</th>
-<th>Phone</th>
-<th>Student ID</th>
 <th>Book</th>
 <th>Copy</th>
-<th>Loan Date</th>
 <th>Due Date</th>
 <th>Status</th>
+<th>Fine (KES)</th>
 <th>Action</th>
 </tr>
-<?php while($row = $active_loans->fetch_assoc()){ 
-$statusClass = 'borrowed';
-$statusText = 'Borrowed';
-if(strtotime($row['due_date']) < time()) { $statusClass='overdue'; $statusText='Overdue'; }
+
+<?php while($row = $active_loans->fetch_assoc()): 
+$days = $row['days_overdue'];
+$fine = calculateFine($days);
+
+$status = $days > 0 ? "Overdue" : "Borrowed";
+$class = $days > 0 ? "overdue" : "borrowed";
 ?>
-<tr>
-<td><?php echo $row['name']; ?></td>
-<td><?php echo $row['email']; ?></td>
-<td><?php echo $row['phone']; ?></td>
-<td><?php echo $row['student_id']; ?></td>
-<td><?php echo $row['title']; ?></td>
-<td><?php echo $row['copy_number']; ?></td>
-<td><?php echo $row['loan_date']; ?></td>
-<td><?php echo $row['due_date']; ?></td>
-<td><span class="badge <?php echo $statusClass;?>"><?php echo $statusText;?></span></td>
-<td><a class="btn" href="return_book.php?loan_id=<?php echo $row['loan_id']; ?>">Return</a></td>
+
+<tr class="<?= $days > 0 ? 'row-overdue' : '' ?>">
+<td><?= $row['name'] ?></td>
+<td><?= $row['email'] ?></td>
+<td><?= $row['title'] ?></td>
+<td><?= $row['copy_number'] ?></td>
+<td><?= $row['due_date'] ?></td>
+<td><span class="badge <?= $class ?>"><?= $status ?></span></td>
+<td><strong><?= $fine ?></strong></td>
+<td>
+<a class="btn return-btn" href="return_book.php?loan_id=<?= $row['loan_id'] ?>">Return</a>
+</td>
 </tr>
-<?php } ?>
+
+<?php endwhile; ?>
 </table>
 
-<!-- OVERDUE BOOKS -->
-<h2>Overdue Books</h2>
+<!-- OVERDUE -->
+<h2 class="section-title">Overdue Books</h2>
+<table class="table-hover">
+<tr>
+<th>User</th><th>Book</th><th>Days Late</th>
+</tr>
+<?php while($row = $overdue_books->fetch_assoc()): ?>
+<tr class="row-overdue">
+<td><?= $row['name'] ?></td>
+<td><?= $row['title'] ?></td>
+<td><?= $row['days_overdue'] ?></td>
+</tr>
+<?php endwhile; ?>
+</table>
+
+<!-- HOLDS -->
+<h2 class="section-title">Active Holds</h2>
 <table class="table-hover">
 <tr>
 <th>User</th>
 <th>Book</th>
-<th>Copy</th>
-<th>Due Date</th>
+<th>Date</th>
+<th>Action</th>
 </tr>
-<?php while($row = $overdue_books->fetch_assoc()){ ?>
-<tr style="color:red;">
-<td><?php echo $row['name'];?></td>
-<td><?php echo $row['title'];?></td>
-<td><?php echo $row['copy_number'];?></td>
-<td><?php echo $row['due_date'];?></td>
-</tr>
-<?php } ?>
-</table>
-
-<!-- ACTIVE HOLDS -->
-<h2>Active Holds</h2>
-<table class="table-hover">
+<?php while($row = $holds->fetch_assoc()): ?>
 <tr>
-<th>User</th>
-<th>Email</th>
-<th>Book</th>
-<th>Hold Date</th>
+<td><?= $row['name'] ?></td>
+<td><?= $row['title'] ?></td>
+<td><?= $row['hold_date'] ?></td>
+<td>
+<a class="btn issue-btn" href="issue_book.php?user_id=<?= $row['user_id'] ?>&book_id=<?= $row['book_id'] ?>">Issue</a>
+</td>
 </tr>
-<?php while($row = $holds->fetch_assoc()){ ?>
-<tr>
-<td><?php echo $row['name'];?></td>
-<td><?php echo $row['email'];?></td>
-<td><?php echo $row['title'];?></td>
-<td><?php echo $row['hold_date'];?></td>
-</tr>
-<?php } ?>
+<?php endwhile; ?>
 </table>
 
 </div>
