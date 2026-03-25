@@ -21,26 +21,42 @@ function calculateFine($days) {
 }
 
 /* ---------- STATISTICS ---------- */
-$total_books = $conn->query("SELECT COUNT(*) as total FROM books")->fetch_assoc()['total'];
-$total_users = $conn->query("SELECT COUNT(*) as total FROM users")->fetch_assoc()['total'];
-$borrowed = $conn->query("SELECT COUNT(*) as total FROM book_copies WHERE status='borrowed'")->fetch_assoc()['total'];
-$available = $conn->query("SELECT COUNT(*) as total FROM book_copies WHERE status='available'")->fetch_assoc()['total'];
+$stmt = $conn->prepare("SELECT COUNT(*) as total FROM books");
+$stmt->execute();
+$total_books = $stmt->get_result()->fetch_assoc()['total'];
+$stmt->close();
+
+$stmt = $conn->prepare("SELECT COUNT(*) as total FROM users");
+$stmt->execute();
+$total_users = $stmt->get_result()->fetch_assoc()['total'];
+$stmt->close();
+
+$stmt_borrowed = $conn->prepare("SELECT COUNT(*) as total FROM book_copies WHERE status=?");
+$status_b = "borrowed";
+$stmt_borrowed->bind_param("s", $status_b);
+$stmt_borrowed->execute();
+$borrowed = $stmt_borrowed->get_result()->fetch_assoc()['total'];
+$stmt_borrowed->close();
+
+$stmt_available = $conn->prepare("SELECT COUNT(*) as total FROM book_copies WHERE status=?");
+$status_a = "available";
+$stmt_available->bind_param("s", $status_a);
+$stmt_available->execute();
+$available = $stmt_available->get_result()->fetch_assoc()['total'];
+$stmt_available->close();
 
 /* ---------- CALCULATE BORROWED / RETURNED / OVERDUE FOR CHART ---------- */
 $totalBorrowed = $borrowed;
 
-$returned = $conn->query("
-    SELECT COUNT(*) as total 
-    FROM loans 
-    WHERE return_date IS NOT NULL
-")->fetch_assoc()['total'];
+$stmt = $conn->prepare("SELECT COUNT(*) as total FROM loans WHERE return_date IS NOT NULL");
+$stmt->execute();
+$returned = $stmt->get_result()->fetch_assoc()['total'];
+$stmt->close();
 
-$overdue = $conn->query("
-    SELECT COUNT(*) as total 
-    FROM loans 
-    WHERE return_date IS NULL 
-    AND due_date < CURDATE()
-")->fetch_assoc()['total'];
+$stmt = $conn->prepare("SELECT COUNT(*) as total FROM loans WHERE return_date IS NULL AND due_date < CURDATE()");
+$stmt->execute();
+$overdue = $stmt->get_result()->fetch_assoc()['total'];
+$stmt->close();
 
 /* ---------- USER SEARCH (SECURE) ---------- */
 $search_results = null;
@@ -204,6 +220,23 @@ new Chart(ctx, {
 </table>
 <?php endif; ?>
 
+<!-- TOTAL OVERDUE FINES -->
+<?php 
+$total_overdue_fine = 0;
+// Fetch active loans for fine calc separately to avoid pointer issues
+$fine_query = $conn->query("
+SELECT GREATEST(DATEDIFF(CURDATE(), due_date), 0) AS days_overdue
+FROM loans WHERE return_date IS NULL
+");
+while($fine_row = $fine_query->fetch_assoc()) {
+    $total_overdue_fine += calculateFine($fine_row['days_overdue']);
+}
+$fine_query->close();
+?>
+<div class="alert alert-warning">
+<strong>Total Overdue Fines: KES <?= number_format($total_overdue_fine) ?></strong>
+</div>
+
 <!-- ACTIVE LOANS -->
 <h2 class="section-title">Borrowed Books</h2>
 <table class="table-hover">
@@ -234,8 +267,8 @@ $class = $days > 0 ? "overdue" : "borrowed";
 <td><?= $row['due_date'] ?></td>
 <td><span class="badge <?= $class ?>"><?= $status ?></span></td>
 <td><strong><?= $fine ?></strong></td>
-<td>
-<a class="btn return-btn" href="return_book.php?loan_id=<?= $row['loan_id'] ?>">Return</a>
+    <td>
+<a class="btn return-btn" href="return_book.php?loan_id=<?= $row['loan_id'] ?>" onclick="return confirm('Return this book to <?= htmlspecialchars($row['name']) ?>?')">Return</a>
 </td>
 </tr>
 
@@ -271,8 +304,8 @@ $class = $days > 0 ? "overdue" : "borrowed";
 <td><?= $row['name'] ?></td>
 <td><?= $row['title'] ?></td>
 <td><?= $row['hold_date'] ?></td>
-<td>
-<a class="btn issue-btn" href="issue_book.php?user_id=<?= $row['user_id'] ?>&book_id=<?= $row['book_id'] ?>">Issue</a>
+    <td>
+<a class="btn issue-btn" href="issue_book.php?user_id=<?= $row['user_id'] ?>&book_id=<?= $row['book_id'] ?>" onclick="return confirm('Issue <?= htmlspecialchars($row['title']) ?> to <?= htmlspecialchars($row['name']) ?>?')">Issue</a>
 </td>
 </tr>
 <?php endwhile; ?>
