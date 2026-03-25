@@ -257,7 +257,7 @@ if(isset($_POST['update_password'])){
 </body>
 </html> 
 
-**New user/profile.php created** with:
+<!-- */New user/profile.php created** with:
 - View current profile info.
 - Edit name/phone/student_id.
 - Change password w/ current verification.
@@ -268,3 +268,4 @@ if(isset($_POST['update_password'])){
 Added to navbar links. Users can fully manage complete profiles.
 
 Library system now has comprehensive profile management + all previous features.
+/* -->
