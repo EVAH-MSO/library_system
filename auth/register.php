@@ -30,9 +30,13 @@ if(isset($_POST['register'])){
             // Insert new user
             $stmt = $conn->prepare("INSERT INTO users (name,email,password,phone,student_id,role) VALUES (?,?,?,?,?,?)");
             $role = 'student';
-            $stmt->bind_param("ssssss", $name, $email, $password, $phone, $student_id, $role);
+$stmt->bind_param("ssssss", $name, $email, $password, $phone, $student_id, $role);
             if($stmt->execute()){
-                $message = "Registration successful! You can now <a href='login.php'>login</a>.";
+                $_SESSION['user_id'] = $conn->insert_id;
+                $_SESSION['role'] = 'student';
+                $_SESSION['user_name'] = $name;
+                header("Location: ../user/dashboard.php");
+                exit;
             } else {
                 $message = "Error registering user. Please try again.";
             }
