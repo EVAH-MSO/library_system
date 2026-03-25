@@ -8,6 +8,7 @@ if(!isset($_SESSION['user_id'])){
 }
 
 $user_id = $_SESSION['user_id'];
+$user_name = $_SESSION['user_name'] ?? 'Student';
 
 function calculateFine($days) {
     if ($days <= 0) return 0;
@@ -46,13 +47,18 @@ $searchTerm = $conn->real_escape_string($searchTerm);
 </head>
 <body>
 
-<div class="navbar">
-    <h1 style="font-size: 24px;">👩‍🎓 Student Dashboard</h1>
+<div class="navbar" style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center;">
+        <h1 style="font-size: 24px; margin-right: 20px;">👩‍🎓 Student Dashboard</h1>
+        <div style="background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 25px;">
+            <span style="color: white; font-weight: bold;">👋 Hello, <span style="color: #f093fb;"><?= htmlspecialchars($user_name) ?></span></span>
+        </div>
+    </div>
     <div>
-        <a href="../index.php" class="nav-link">🏠 Home</a>
-        <a href="borrow.php">📖 Borrow</a>
-        <a href="hold.php">⏳ Holds</a>
-        <a href="../auth/logout.php" class="logout">🚪 Logout</a>
+        <a href="../index.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">🏠 Home</a>
+        <a href="borrow.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">📖 Borrow</a>
+        <a href="hold.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">⏳ Holds</a>
+        <a href="../auth/logout.php" class="logout" style="color: #ff6b6b; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold;" onclick="return confirm('Are you sure you want to logout?')">🚪 Logout</a>
     </div>
 </div>
 

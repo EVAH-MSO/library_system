@@ -138,12 +138,17 @@ ORDER BY holds.hold_date DESC
 <body>
 
 <!-- NAVBAR -->
-<div class="navbar">
-    <h1>📚 Librarian Panel</h1>
-    <div class="nav-links">
-        <a href="add_book.php">Add Book</a>
-        <a href="manage_books.php">Manage Books</a>
-        <a href="../auth/logout.php" class="logout">Logout</a>
+<div class="navbar" style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center;">
+        <h1 style="font-size: 24px; margin-right: 20px;">👨‍💼 Librarian Panel</h1>
+        <div style="background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 25px;">
+            <span style="color: white; font-weight: bold;">👋 Welcome, Librarian</span>
+        </div>
+    </div>
+    <div>
+        <a href="add_book.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">➕ Add Book</a>
+        <a href="manage_books.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">📋 Manage</a>
+        <a href="../auth/logout.php" class="logout" style="color: #ff6b6b; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold;" onclick="return confirm('Are you sure you want to logout?')">🚪 Logout</a>
     </div>
 </div>
 
