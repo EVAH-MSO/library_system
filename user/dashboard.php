@@ -58,8 +58,10 @@ $searchTerm = $conn->real_escape_string($searchTerm);
 
 <div class="container">
 
-<h2>Student Dashboard</h2>
-<p>Manage your borrowed books and discover new ones.</p>
+<div style="text-align: center; margin-bottom: 40px;">
+    <h1 style="font-size: 36px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 10px;">👩‍🎓 Student Dashboard</h1>
+    <p style="font-size: 18px; color: #666; max-width: 600px; margin: 0 auto;">Your personal library hub - manage borrows, track fines, discover new reads</p>
+</div>
 
 <?php if($message != ""): ?>
 <div class="alert-success"><?php echo $message; ?></div>
@@ -87,8 +89,11 @@ $searchTerm = $conn->real_escape_string($searchTerm);
 </div>
 
 <!-- Optional Doughnut Chart -->
-<div class="chart-container">
-    <canvas id="dashboardChart"></canvas>
+<div class="chart-modern" style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); margin-bottom: 40px;">
+    <h3 style="text-align: center; margin-bottom: 25px; color: #333;">📊 Borrowing Overview</h3>
+    <div style="position: relative; height: 350px;">
+        <canvas id="dashboardChart"></canvas>
+    </div>
 </div>
 <script>
 const ctx = document.getElementById('dashboardChart').getContext('2d');
@@ -111,14 +116,15 @@ new Chart(ctx, {
 
 <!-- Borrowed Books Table -->
 <h2 style="color: #2e7d32; font-size: 24px; margin: 40px 0 20px 0; border-bottom: 3px solid #c8e6c9; padding-bottom: 10px;">📖 Your Borrowed Books</h2>
-<table class="table-hover">
-<tr>
-<th>Book</th>
-<th>Loan Date</th>
-<th>Due Date</th>
-<th>Status</th>
-<th>Fine (KES)</th>
-<th>Action</th>
+<div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.08); margin-bottom: 40px;">
+<table class="table-hover" style="border-radius: 20px; overflow: hidden;">
+<tr style="background: linear-gradient(135deg, #2e7d32, #4caf50); color: white;">
+<th style="padding: 20px 15px; font-weight: bold;">📚 Book</th>
+<th style="padding: 20px 15px; font-weight: bold;">📅 Loan Date</th>
+<th style="padding: 20px 15px; font-weight: bold;">📆 Due Date</th>
+<th style="padding: 20px 15px; font-weight: bold;">Status</th>
+<th style="padding: 20px 15px; font-weight: bold;">💰 Fine (KES)</th>
+<th style="padding: 20px 15px; font-weight: bold;">Action</th>
 </tr>
 <?php
 $sql = "
@@ -164,10 +170,14 @@ while($row = $result->fetch_assoc()){
 
 <!-- Available Books / Holds -->
 <h2>Books You Can Borrow or Place Hold</h2>
-<form method="GET" class="quick-search">
-    <input type="text" name="search_books" placeholder="Search by title, author, ISBN" value="<?php echo htmlspecialchars($searchTerm); ?>">
-    <button type="submit">Search</button>
-</form>
+<div style="background: white; padding: 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); margin-bottom: 40px;">
+    <form method="GET" style="display: flex; max-width: 600px; margin: 0 auto;">
+        <input type="text" name="search_books" placeholder="🔍 Search books by title, author or ISBN..." value="<?php echo htmlspecialchars($searchTerm); ?>" style="flex: 1; padding: 15px 20px; font-size: 16px; border: none; border-radius: 50px 0 0 50px; outline: none; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+        <button type="submit" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px 30px; border: none; border-radius: 0 50px 50px 0; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s; box-shadow: 0 5px 15px rgba(102,126,234,0.4);">
+            Search
+        </button>
+    </form>
+</div>
 
 <div class="book-grid">
 <?php
