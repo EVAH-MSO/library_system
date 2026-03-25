@@ -47,10 +47,12 @@ $searchTerm = $conn->real_escape_string($searchTerm);
 <body>
 
 <div class="navbar">
-    <h1>University Library</h1>
+    <h1 style="font-size: 24px;">👩‍🎓 Student Dashboard</h1>
     <div>
-        <a href="../index.php">Search Books</a>
-        <a href="../auth/logout.php">Logout</a>
+        <a href="../index.php" class="nav-link">🏠 Home</a>
+        <a href="borrow.php">📖 Borrow</a>
+        <a href="hold.php">⏳ Holds</a>
+        <a href="../auth/logout.php" class="logout">🚪 Logout</a>
     </div>
 </div>
 
@@ -63,21 +65,24 @@ $searchTerm = $conn->real_escape_string($searchTerm);
 <div class="alert-success"><?php echo $message; ?></div>
 <?php endif; ?>
 
-<!-- TOTAL FINE --> <div class="alert-danger"> Total Outstanding Fines: <strong><?= $totalFine ?> KES</strong> </div>
+<div class="fine-card" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 30px; box-shadow: 0 8px 25px rgba(255,107,107,0.3);">
+    <h3 style="margin: 0 0 10px 0;">⚠️ Total Outstanding Fines</h3>
+    <h2 style="font-size: 32px; margin: 0;"><?= number_format($totalFine) ?> KES</h2>
+</div>
 
-<!-- Statistics Cards -->
-<div class="card-grid">
-    <div class="card">
-        <h3>Currently Borrowed</h3>
-        <h2><?php echo $totalBorrowed; ?></h2>
+<!-- Modern Statistics Cards -->
+<div class="stats-modern" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+    <div class="stat-card borrowed-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 16px; text-align: center; box-shadow: 0 10px 30px rgba(102,126,234,0.3);">
+        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 10px;">📚 Currently Borrowed</div>
+        <h2 style="font-size: 36px; margin: 0;"><?= $totalBorrowed ?></h2>
     </div>
-    <div class="card">
-        <h3>Returned Books</h3>
-        <h2><?php echo $returned; ?></h2>
+    <div class="stat-card returned-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 25px; border-radius: 16px; text-align: center; box-shadow: 0 10px 30px rgba(240,147,251,0.3);">
+        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 10px;">✅ Returned Books</div>
+        <h2 style="font-size: 36px; margin: 0;"><?= $returned ?></h2>
     </div>
-    <div class="card">
-        <h3>Overdue Books</h3>
-        <h2><?php echo $overdue; ?></h2>
+    <div class="stat-card overdue-card" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #d35400; padding: 25px; border-radius: 16px; text-align: center; box-shadow: 0 10px 30px rgba(252,182,159,0.3);">
+        <div style="font-size: 14px; margin-bottom: 10px;">⚠️ Overdue Books</div>
+        <h2 style="font-size: 36px; margin: 0;"><?= $overdue ?></h2>
     </div>
 </div>
 
@@ -105,7 +110,7 @@ new Chart(ctx, {
 </script>
 
 <!-- Borrowed Books Table -->
-<h2>Your Borrowed Books</h2>
+<h2 style="color: #2e7d32; font-size: 24px; margin: 40px 0 20px 0; border-bottom: 3px solid #c8e6c9; padding-bottom: 10px;">📖 Your Borrowed Books</h2>
 <table class="table-hover">
 <tr>
 <th>Book</th>
