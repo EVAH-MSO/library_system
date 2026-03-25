@@ -75,12 +75,15 @@ if(isset($_POST['login'])){
         <?php if(isset($error)) echo "<p style='color:red'>$error</p>"; ?>
         <form method="POST">
             <label>Email</label>
-            <input type="email" name="email" required>
+            <input type="email" name="email" placeholder="Enter Email" required>
 
             <label>Password</label>
-            <input type="password" name="password" required minlength="8">
+            <input type="password" name="password" placeholder="Enter Password" required minlength="8">
 
             <button class="btn" name="login">Login</button>
+            <span style="display:flex; margin-top:10px;text-decoration:none;">
+           <p>Don't have an account?</p> <a href="register.php">Register</a>
+           </span>
         </form>
     </div>
 </div>

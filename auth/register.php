@@ -100,19 +100,19 @@ if(isset($_POST['register'])){
 
     <form method="POST" action="">
         <label>Full Name</label>
-        <input type="text" name="name" required>
+        <input type="text" name="name" placeholder="Enter name" required>
 
         <label>Email</label>
-        <input type="email" name="email" required>
+        <input type="email" name="email" placeholder="Enter Email" required>
 
         <label>Phone Number</label>
-        <input type="text" name="phone" required>
+        <input type="text" name="phone" placeholder="Enter Phone Number" required>
 
         <label>Student ID</label>
-        <input type="text" name="student_id" required>
+        <input type="text" name="student_id" placeholder="Enter Student ID" required>
 
         <label>Password</label>
-        <input type="password" name="password" required minlength="8">
+        <input type="password" name="password" placeholder="Enter Password" required minlength="8">
 
         <button type="submit" name="register">Register</button>
     </form>

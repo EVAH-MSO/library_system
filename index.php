@@ -6,6 +6,7 @@ session_start();
 /* include database connection */
 include "config/database.php";
 
+
 ?>
 
 <!DOCTYPE html>
@@ -39,7 +40,7 @@ if(isset($_SESSION['user_id'])){
     echo "<a href='auth/logout.php'>Logout</a>";
 }else{
     echo "<a href='auth/login.php'>Login</a>";
-    echo "<a href='auth/register.php'>Register</a>"; // added registration link
+echo "<a href='auth/register.php'>Register</a>"; // added registration link
 }
 
 ?>
@@ -47,6 +48,14 @@ if(isset($_SESSION['user_id'])){
 </div>
 
 </div>
+
+<?php
+/* Require login to see main content */
+if(!isset($_SESSION['user_id'])){
+    header("Location: auth/login.php");
+    exit();
+}
+?>
 
 <div class="container">
 
