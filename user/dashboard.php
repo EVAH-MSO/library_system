@@ -58,6 +58,7 @@ $searchTerm = $conn->real_escape_string($searchTerm);
         <a href="../index.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">🏠 Home</a>
         <a href="borrow.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">📖 Borrow</a>
         <a href="hold.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">⏳ Holds</a>
+        <a href="profile.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">👤 Profile</a>
         <a href="../auth/logout.php" class="logout" style="color: #ff6b6b; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold;" onclick="return confirm('Are you sure you want to logout?')">🚪 Logout</a>
     </div>
 </div>
@@ -162,7 +163,7 @@ while($row = $result->fetch_assoc()){
 <td>{$row['due_date']}</td>
 <td><span class='badge {$class}'>{$status}</span></td>
 <td>{$fine}</td>
-<td>".(!$row['return_date'] ? "<a class='btn' href='return_book.php?loan_id={$row['id']}'>Return</a>" : "-")."</td>
+        <td>".(!$row['return_date'] ? "<a class='btn' href='return_book.php?loan_id={$row['id']}' onclick=\"return confirm('Return \\\"{$row['title']}\"? Fines may apply if overdue.');\">Return</a>" : "-")."</td>
 </tr>";
 }
 ?>
@@ -204,9 +205,9 @@ while($b = $availableBooks->fetch_assoc()){
         <p>Available: {$b['available_copies']}</p>";
 
     if($b['available_copies']>0){
-        echo "<a class='btn' href='borrow.php?book_id={$b['id']}'>Borrow</a>";
+        echo "<a class='btn' href='borrow.php?book_id={$b['id']}' onclick=\"return confirm('Are you sure you want to borrow this book?');\">Borrow</a>";
     } else {
-        echo $hasHold ? "<button class='btn btn-hold' disabled>Pending</button>" : "<a class='btn btn-hold' href='hold.php?book_id={$b['id']}'>Place Hold</a>";
+        echo $hasHold ? "<button class='btn btn-hold' disabled>Pending</button>" : "<a class='btn btn-hold' href='hold.php?book_id={$b['id']}' onclick=\"return confirm('Place a hold on \\\"{$b['title']}\"? It will notify when available.');\">Place Hold</a>";
     }
 
     echo "</div>";
