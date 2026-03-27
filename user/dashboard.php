@@ -211,8 +211,22 @@ while($b = $availableBooks->fetch_assoc()){
     $holdCheck = $conn->query("SELECT * FROM holds WHERE user_id='$user_id' AND book_id='".$b['id']."' AND status='pending'");
     $hasHold = $holdCheck->num_rows>0;
 
-    echo "<div class='book-card'>
-        <img src='../images/{$b['image']}' alt='{$b['title']}'>
+    $image_folder = "../images/books/";
+$image_path = $image_folder . "placeholder.png";
+
+if (!empty($b['image'])) {
+    $possible_path = $image_folder . basename($b['image']);
+    $old_path = "../images/" . basename($b['image']);
+
+    if (file_exists($possible_path)) {
+        $image_path = $possible_path;
+    } elseif (file_exists($old_path)) {
+        $image_path = $old_path;
+    }
+}
+
+echo "<div class='book-card'>
+    <img src='".htmlspecialchars($image_path)."' alt='".htmlspecialchars($b['title'])."'>
         <h3>{$b['title']}</h3>
         <p>{$b['author']}</p>
         <p>Available: {$b['available_copies']}</p>";

@@ -6,6 +6,9 @@ include "../config/database.php";
 if (!isset($_SESSION['role']) || $_SESSION['role'] != "librarian") {
     die("Access denied");
 }
+
+// Optional: suppress notices for undefined variables
+error_reporting(E_ALL & ~E_NOTICE);
 ?>
 
 <!DOCTYPE html>
@@ -20,7 +23,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] != "librarian") {
             margin: 0;
             padding: 0;
         }
-
         .navbar {
             background-color: #2f3640;
             color: #fff;
@@ -29,10 +31,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] != "librarian") {
             justify-content: space-between;
             align-items: center;
         }
-        .navbar h1 {
-            margin: 0;
-            font-size: 22px;
-        }
+        .navbar h1 { margin: 0; font-size: 22px; }
         .navbar a {
             color: #f5f6fa;
             text-decoration: none;
@@ -42,7 +41,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] != "librarian") {
         .navbar a:hover { text-decoration: underline; }
 
         .container { padding: 20px 40px; }
-
         h2 { color: #2f3640; margin-bottom: 20px; }
 
         table {
@@ -140,15 +138,22 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] != "librarian") {
         if ($result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
 
-                /* check both new and old image locations */
-                $new_path = "../images/books/" . $row['image'];
-                $old_path = "../images/" . $row['image'];
-                if (file_exists($new_path)) {
-                    $image_path = $new_path;
-                } elseif (file_exists($old_path)) {
-                    $image_path = $old_path;
-                } else {
-                    $image_path = "../images/books/placeholder.png"; // fallback
+                // Base image folder
+                $image_folder = "../images/books/";
+
+                // Default to placeholder
+                $image_path = $image_folder . "placeholder.png";
+
+                // Check if 'image' exists and file is valid
+                if (!empty($row['image'])) {
+                    $possible_path = $image_folder . basename($row['image']);
+                    $old_path = "../images/" . basename($row['image']); // old folder fallback
+
+                    if (file_exists($possible_path)) {
+                        $image_path = $possible_path;
+                    } elseif (file_exists($old_path)) {
+                        $image_path = $old_path;
+                    }
                 }
         ?>
         <tr>
