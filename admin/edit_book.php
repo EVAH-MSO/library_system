@@ -78,7 +78,7 @@ if(isset($_POST['add_copy'])){
 <input type="text" name="isbn" value="<?php echo $book['isbn']; ?>">
 
 <label>Quantity</label>
-<input type="number" min="0" name="quantity" value="<?php echo $book['Quantity']; ?>">
+<input type="number" min="0" name="quantity"> 
 
 <button class="btn" name="update">Update Book</button>
 

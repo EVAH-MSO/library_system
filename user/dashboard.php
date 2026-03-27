@@ -8,7 +8,7 @@ if(!isset($_SESSION['user_id'])){
 }
 
 $user_id = $_SESSION['user_id'];
-$user_name = $_SESSION['user_name'] ?? 'Student';
+
 
 function calculateFine($days) {
     if ($days <= 0) return 0;
@@ -28,7 +28,23 @@ $overdue = $conn->query("SELECT COUNT(*) AS total FROM loans WHERE user_id='$use
 $returned = $conn->query("SELECT COUNT(*) AS total FROM loans WHERE user_id='$user_id' AND return_date IS NOT NULL")->fetch_assoc()['total'];
 
 
-/* ---------- TOTAL UNPAID FINES ---------- */ $res = $conn->query(" SELECT SUM(fine_amount) AS total FROM loans WHERE user_id=$user_id AND fine_paid=0 "); $totalFine = $res->fetch_assoc()['total'] ?? 0;
+$liveOverdueFines = 0;
+$overdueLoans = $conn->query("
+  SELECT GREATEST(DATEDIFF(CURDATE(), due_date), 0) AS days_overdue
+  FROM loans 
+  WHERE user_id=$user_id AND return_date IS NULL
+");
+while($row = $overdueLoans->fetch_assoc()) {
+  $liveOverdueFines += calculateFine($row['days_overdue']);
+}
+$overdueLoans->close();
+
+$storedUnpaidFines = 0;
+$unpaidFines = $conn->query(" SELECT SUM(fine_amount) AS total FROM loans WHERE user_id=$user_id AND fine_paid=0 "); 
+$storedUnpaidFines = $unpaidFines->fetch_assoc()['total'] ?? 0;
+$unpaidFines->close();
+
+$totalFine = $liveOverdueFines + $storedUnpaidFines;
 /* Search */
 $searchTerm = $_GET['search_books'] ?? "";
 $searchTerm = $conn->real_escape_string($searchTerm);
@@ -50,9 +66,6 @@ $searchTerm = $conn->real_escape_string($searchTerm);
 <div class="navbar" style="display: flex; justify-content: space-between; align-items: center;">
     <div style="display: flex; align-items: center;">
         <h1 style="font-size: 24px; margin-right: 20px;">👩‍🎓 Student Dashboard</h1>
-        <div style="background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 25px;">
-            <span style="color: white; font-weight: bold;">👋 Hello, <span style="color: #f093fb;"><?= htmlspecialchars($user_name) ?></span></span>
-        </div>
     </div>
     <div>
         <a href="../index.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">🏠 Home</a>
