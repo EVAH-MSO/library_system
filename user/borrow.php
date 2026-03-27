@@ -10,7 +10,7 @@ if(!isset($_SESSION['user_id'])){
 
 $user_id = $_SESSION['user_id'];
 
-/* --- Validate book_id from GET --- */
+/* --- Validate book_id --- */
 if(!isset($_GET['book_id']) || empty($_GET['book_id'])){
     $_SESSION['message'] = "Invalid book selection.";
     header("Location: dashboard.php");
@@ -19,43 +19,74 @@ if(!isset($_GET['book_id']) || empty($_GET['book_id'])){
 
 $book_id = intval($_GET['book_id']);
 
-/* --- Find an available copy --- */
-$sql = "SELECT id 
-        FROM book_copies 
-        WHERE book_id='$book_id' 
-        AND status='available' 
-        LIMIT 1";
+/* --- STEP 1: Find an available copy (LOCKED SAFE VERSION) --- */
+$sql = "
+    SELECT id 
+    FROM book_copies 
+    WHERE book_id = '$book_id' 
+    AND status = 'available' 
+    LIMIT 1
+    FOR UPDATE
+";
 
 $result = $conn->query($sql);
 
-if($result->num_rows > 0){
+if($result && $result->num_rows > 0){
+
     $copy = $result->fetch_assoc();
     $copy_id = $copy['id'];
 
-    /* --- Mark copy as borrowed --- */
-    $conn->query("
+    /* --- STEP 2: Mark copy as borrowed --- */
+    $update = $conn->query("
         UPDATE book_copies
-        SET status='borrowed'
-        WHERE id='$copy_id'
+        SET status = 'borrowed'
+        WHERE id = '$copy_id'
     ");
 
-    /* --- Record the loan --- */
+    if(!$update){
+        $_SESSION['message'] = "Failed to update book copy.";
+        header("Location: dashboard.php");
+        exit;
+    }
+
+    /* --- STEP 3: Create loan record (IMPORTANT FIX HERE) --- */
     $loan_date = date("Y-m-d");
-    $due_date = date("Y-m-d", strtotime("+14 days")); // 2 weeks loan
+    $due_date = date("Y-m-d", strtotime("+14 days"));
 
-    $conn->query("
-        INSERT INTO loans (user_id, copy_id, loan_date, due_date)
-        VALUES ('$user_id', '$copy_id', '$loan_date', '$due_date')
+    $insert = $conn->query("
+        INSERT INTO loans (
+            user_id,
+            copy_id,
+            loan_date,
+            due_date,
+            return_date,
+            fine_amount,
+            fine_paid
+        )
+        VALUES (
+            '$user_id',
+            '$copy_id',
+            '$loan_date',
+            '$due_date',
+            NULL,
+            0.00,
+            0
+        )
     ");
 
-    /* --- Set success message --- */
-    $_SESSION['message'] = "Book borrowed successfully! Due on $due_date.";
+    if(!$insert){
+        $_SESSION['message'] = "Failed to create loan record: " . $conn->error;
+        header("Location: dashboard.php");
+        exit;
+    }
 
-    /* --- Redirect back to dashboard --- */
+    /* --- SUCCESS --- */
+    $_SESSION['message'] = "Book borrowed successfully! Due on $due_date.";
     header("Location: dashboard.php");
     exit;
 
 }else{
+
     /* --- No available copies --- */
     $_SESSION['message'] = "No copies available for this book at the moment.";
     header("Location: dashboard.php");
