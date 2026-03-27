@@ -148,7 +148,9 @@ ORDER BY holds.hold_date DESC
     <div>
         <a href="add_book.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">➕ Add Book</a>
         <a href="manage_books.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">📋 Manage</a>
+        <a href="add_user.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">👥 Add User</a>
         <a href="edit_user.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">👥 Manage Users</a>
+
         <a href="../auth/logout.php" class="logout" style="color: #ff6b6b; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold;" onclick="return confirm('Are you sure you want to logout?')">🚪 Logout</a>
     </div>
 
