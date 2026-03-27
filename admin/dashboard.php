@@ -148,8 +148,10 @@ ORDER BY holds.hold_date DESC
     <div>
         <a href="add_book.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">➕ Add Book</a>
         <a href="manage_books.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">📋 Manage</a>
+        <a href="edit_user.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">👥 Manage Users</a>
         <a href="../auth/logout.php" class="logout" style="color: #ff6b6b; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold;" onclick="return confirm('Are you sure you want to logout?')">🚪 Logout</a>
     </div>
+
 </div>
 
 <div class="container">
@@ -225,6 +227,28 @@ new Chart(ctx, {
 </table>
 <?php endif; ?>
 
+
+<!-- USERS MANAGEMENT -->
+<h2 class="section-title">👥 Users Management</h2>
+<table class="table-hover">
+<tr>
+<th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Student ID</th><th>Role</th><th>Action</th>
+</tr>
+<?php
+$users = $conn->query("SELECT * FROM users ORDER BY name ASC");
+while($u = $users->fetch_assoc()): ?>
+<tr>
+<td><?= $u['id'] ?></td>
+<td><?= htmlspecialchars($u['name']) ?></td>
+<td><?= htmlspecialchars($u['email']) ?></td>
+<td><?= $u['phone'] ?></td>
+<td><?= htmlspecialchars($u['student_id']) ?></td>
+<td><span class="badge <?= $u['role']=='librarian' ? 'admin' : 'student' ?>"><?= ucfirst($u['role']) ?></span></td>
+<td><a class="btn" href="edit_user.php?id=<?= $u['id'] ?>">Edit</a></td>
+</tr>
+<?php endwhile; ?>
+</table>
+
 <!-- TOTAL OVERDUE FINES -->
 <?php 
 $total_overdue_fine = 0;
@@ -244,6 +268,7 @@ $fine_query->close();
 
 <!-- ACTIVE LOANS -->
 <h2 class="section-title">Borrowed Books</h2>
+
 <table class="table-hover">
 <tr>
 <th>User</th>
