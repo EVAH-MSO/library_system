@@ -72,6 +72,7 @@ $searchTerm = $conn->real_escape_string($searchTerm);
         <a href="borrow.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">📖 Borrow</a>
         <a href="hold.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">⏳ Holds</a>
         <a href="profile.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">👤 Profile</a>
+        <a href="my_fines.php" style="color: white; text-decoration: none; margin: 0 15px; font-weight: bold;">💰 Pay Fines</a>
         <a href="../auth/logout.php" class="logout" style="color: #ff6b6b; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold;" onclick="return confirm('Are you sure you want to logout?')">🚪 Logout</a>
     </div>
 </div>
